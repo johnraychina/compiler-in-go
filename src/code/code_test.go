@@ -5,7 +5,6 @@ import (
 )
 
 func TestMake(t *testing.T) {
-
 	tests := []struct {
 		op       Opcode
 		operands []int
