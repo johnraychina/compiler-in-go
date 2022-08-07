@@ -70,8 +70,8 @@ func (c *Compiler) addConstant(obj *object.Integer) int {
 
 func (c *Compiler) Bytecode() *Bytecode {
 	return &Bytecode{
-		instructions: c.instructions,
-		constants:    c.constants,
+		Instructions: c.instructions,
+		Constants:    c.constants,
 	}
 }
 
@@ -83,6 +83,6 @@ func (c *Compiler) addInstruction(ins []byte) int {
 }
 
 type Bytecode struct {
-	instructions code.Instructions
-	constants    []object.Object
+	Instructions code.Instructions
+	Constants    []object.Object
 }

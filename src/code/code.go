@@ -19,7 +19,7 @@ type Definition struct {
 }
 
 var definitions = map[Opcode]*Definition{
-	OpConstant: &Definition{
+	OpConstant: {
 		Name:          "OpConstant",
 		OperandWidths: []int{2},
 	},
