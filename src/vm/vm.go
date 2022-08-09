@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"errors"
 	"fmt"
 	"monkey/code"
 	"monkey/compiler"
@@ -43,47 +42,49 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpAdd:
-			right := vm.pop()
-			left := vm.pop()
-			rightValue := right.(*object.Integer).Value
-			leftValue := left.(*object.Integer).Value
-
-			result := leftValue + rightValue
-			vm.push(&object.Integer{Value: result})
-		case code.OpSub:
-			right := vm.pop()
-			left := vm.pop()
-			rightValue := right.(*object.Integer).Value
-			leftValue := left.(*object.Integer).Value
-
-			result := leftValue - rightValue
-			vm.push(&object.Integer{Value: result})
-		case code.OpMul:
-			right := vm.pop()
-			left := vm.pop()
-			rightValue := right.(*object.Integer).Value
-			leftValue := left.(*object.Integer).Value
-
-			// todo overflow check
-			result := leftValue * rightValue
-			vm.push(&object.Integer{Value: result})
-		case code.OpDiv:
-			right := vm.pop()
-			left := vm.pop()
-			rightValue := right.(*object.Integer).Value
-			leftValue := left.(*object.Integer).Value
-
-			if rightValue == 0 {
-				return errors.New("divide by 0")
+			err := vm.executeBinaryOperation(op)
+			if err != nil {
+				return err
 			}
-			result := leftValue / rightValue
-			vm.push(&object.Integer{Value: result})
 		case code.OpPop:
 			vm.pop()
 		}
 	}
 
 	return nil
+}
+
+func (vm *VM) executeBinaryOperation(op code.Opcode) error {
+	right := vm.pop()
+	left := vm.pop()
+	leftType := left.Type()
+	rightType := right.Type()
+
+	if leftType == object.INTEGER_OBJ && rightType == object.INTEGER_OBJ {
+		return vm.executeBinaryIntegerOperation(op, left, right)
+	}
+	return fmt.Errorf("unsupported types for binary operation: %s %s", leftType, rightType)
+}
+
+func (vm *VM) executeBinaryIntegerOperation(op code.Opcode, left, right object.Object) error {
+	rightValue := right.(*object.Integer).Value
+	leftValue := left.(*object.Integer).Value
+
+	var result int64
+
+	// todo overflow check
+	switch op {
+	case code.OpAdd:
+		result = leftValue + rightValue
+	case code.OpSub:
+		result = leftValue - rightValue
+	case code.OpMul:
+		result = leftValue * rightValue
+	case code.OpDiv:
+		result = leftValue / rightValue
+	}
+
+	return vm.push(&object.Integer{Value: result})
 }
 
 func (vm *VM) push(o object.Object) error {
