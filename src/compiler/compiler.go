@@ -40,6 +40,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 
+		c.emit(code.OpPop)
+
 	case *ast.InfixExpression:
 		err := c.Compile(node.Left)
 		if err != nil {
