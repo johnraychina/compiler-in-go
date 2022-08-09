@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"errors"
 	"fmt"
 	"monkey/code"
 	"monkey/compiler"
@@ -48,6 +49,34 @@ func (vm *VM) Run() error {
 			leftValue := left.(*object.Integer).Value
 
 			result := leftValue + rightValue
+			vm.push(&object.Integer{Value: result})
+		case code.OpSub:
+			right := vm.pop()
+			left := vm.pop()
+			rightValue := right.(*object.Integer).Value
+			leftValue := left.(*object.Integer).Value
+
+			result := leftValue - rightValue
+			vm.push(&object.Integer{Value: result})
+		case code.OpMul:
+			right := vm.pop()
+			left := vm.pop()
+			rightValue := right.(*object.Integer).Value
+			leftValue := left.(*object.Integer).Value
+
+			// todo overflow check
+			result := leftValue * rightValue
+			vm.push(&object.Integer{Value: result})
+		case code.OpDiv:
+			right := vm.pop()
+			left := vm.pop()
+			rightValue := right.(*object.Integer).Value
+			leftValue := left.(*object.Integer).Value
+
+			if rightValue == 0 {
+				return errors.New("divide by 0")
+			}
+			result := leftValue / rightValue
 			vm.push(&object.Integer{Value: result})
 		case code.OpPop:
 			vm.pop()
