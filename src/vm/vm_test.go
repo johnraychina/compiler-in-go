@@ -30,6 +30,23 @@ func TestIntegerArithmetic(t *testing.T) {
 		{"5 * 2 + 10", 20},
 		{"5 + 2 * 10", 25},
 		{"5 * (2 + 10)", 60},
+		{"1 < 2", true},
+		{"1 > 2", false},
+		{"1 < 1", false},
+		{"1 > 1", false},
+		{"1 == 1", true},
+		{"1 != 1", false},
+		{"1 == 2", false},
+		{"1 != 2", true},
+		{"true == true", true},
+		{"false == false", true},
+		{"true == false", false},
+		{"true != false", true},
+		{"false != true", true},
+		{"(1 < 2) == true", true},
+		{"(1 < 2) == false", false},
+		{"(1 > 2) == true", false},
+		{"(1 > 2) == false", true},
 	}
 
 	runVmTests(t, tests)
