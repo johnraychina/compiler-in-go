@@ -15,6 +15,19 @@ type vmTestCase struct {
 	expected interface{}
 }
 
+func TestBooleanExpressions(t *testing.T) {
+	tests := []vmTestCase{
+		{"!true", false},
+		{"!false", true},
+		{"!5", false},
+		{"!!true", true},
+		{"!!false", false},
+		{"!!5", true},
+	}
+
+	runVmTests(t, tests)
+}
+
 func TestIntegerArithmetic(t *testing.T) {
 	tests := []vmTestCase{
 		{"1", 1},
@@ -47,6 +60,10 @@ func TestIntegerArithmetic(t *testing.T) {
 		{"(1 < 2) == false", false},
 		{"(1 > 2) == true", false},
 		{"(1 > 2) == false", true},
+		{"-5", -5},
+		{"-10", -10},
+		{"-50 + 100 + -50", 0},
+		{"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
 	}
 
 	runVmTests(t, tests)
