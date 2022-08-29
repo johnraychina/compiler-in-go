@@ -36,6 +36,17 @@ func (vm *VM) Run() error {
 		op := code.Opcode(vm.instructions[ip])
 
 		switch op {
+		case code.OpJump:
+			jumpPos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip = jumpPos - 1 // 跳转到指定位置前面的那个byte
+		case code.OpJumpNotTruthy:
+			jumpPos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			condition := vm.pop()
+			if !isTruthy(condition) {
+				ip = jumpPos - 1
+			}
 		case code.OpConstant:
 			constIndex := code.ReadUint16(vm.instructions[ip+1:])
 			ip += 2
@@ -80,6 +91,15 @@ func (vm *VM) Run() error {
 	}
 
 	return nil
+}
+
+func isTruthy(obj object.Object) bool {
+	switch obj := obj.(type) {
+	case *object.Boolean:
+		return obj.Value
+	default:
+		return true
+	}
 }
 
 func (vm *VM) executeBangOperator() error {
