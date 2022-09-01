@@ -7,6 +7,26 @@ import (
 	"monkey/object"
 )
 
+type SymbolScope string
+
+const GlobalScope SymbolScope = "GLOBAL"
+
+type Symbol struct {
+	Name  string
+	Scope SymbolScope
+	Index int
+}
+
+type SymbolTable struct {
+	store          map[string]Symbol
+	numDefinitions int
+}
+
+func NewSymbolTable() *SymbolTable {
+	s := make(map[string]Symbol)
+	return &SymbolTable{store: s}
+}
+
 type EmmittedInstruction struct {
 	Opcode   code.Opcode
 	Position int
@@ -19,7 +39,8 @@ type Compiler struct {
 
 	// 常量池便于减少重复数据消耗内存
 	// instruction只需要引用各操作数的index，格式更加规整，处理逻辑更简单，index固定2个byte（有65535个足够用了）
-	constants []object.Object
+	constants   []object.Object
+	symbolTable *SymbolTable
 }
 
 func New() *Compiler {
@@ -28,6 +49,7 @@ func New() *Compiler {
 		constants:           []object.Object{},
 		lastInstruction:     EmmittedInstruction{},
 		previousInstruction: EmmittedInstruction{},
+		symbolTable:         NewSymbolTable(),
 	}
 }
 
@@ -170,6 +192,20 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return err
 			}
 		}
+	case *ast.LetStatement:
+		err := c.Compile(node.Value)
+		if err != nil {
+			return err
+		}
+
+		symbol := c.symbolTable.Define(node.Name.Value)
+		c.emit(code.OpSetGlobal, symbol.Index)
+	case *ast.Identifier:
+		symbol, ok := c.symbolTable.Resolve(node.Value)
+		if !ok {
+			return fmt.Errorf("undefined variable %s", node.Value)
+		}
+		c.emit(code.OpGetGlobal, symbol.Index)
 	}
 	return nil
 }
