@@ -117,6 +117,17 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpArray:
+			numElements := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			array := vm.buildArray(vm.sp-numElements, vm.sp)
+			vm.sp = vm.sp - numElements
+
+			err := vm.push(array)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -265,4 +276,14 @@ func (vm *VM) pop() object.Object {
 
 func (vm *VM) LastPoppedStackElem() object.Object {
 	return vm.stack[vm.sp]
+}
+
+func (vm *VM) buildArray(spStart int, spEnd int) *object.Array {
+	elements := make([]object.Object, spEnd-spStart)
+
+	for i := spStart; i < spEnd; i++ {
+		elements[i-spStart] = vm.stack[i]
+	}
+
+	return &object.Array{Elements: elements}
 }
