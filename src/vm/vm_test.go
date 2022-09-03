@@ -18,9 +18,9 @@ type vmTestCase struct {
 func TestStringExpressions(t *testing.T) {
 
 	tests := []vmTestCase{
-		{`"monkey"`, `"monkey"`},
-		{`"mon" + "key"`, `"monkey"`},
-		{`"mon" + "key" + "banana"`, `"monkey"banana`},
+		{`"monkey"`, "monkey"},
+		{`"mon" + "key"`, "monkey"},
+		{`"mon" + "key" + "banana"`, "monkeybanana"},
 	}
 
 	runVmTests(t, tests)
