@@ -7,7 +7,7 @@ func (s *SymbolTable) Define(name string) Symbol {
 	return symbol
 }
 
-func (s SymbolTable) Resolve(name string) (Symbol, bool) {
+func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
 	obj, ok := s.store[name]
 	return obj, ok
 }

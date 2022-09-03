@@ -39,8 +39,16 @@ type Compiler struct {
 
 	// 常量池便于减少重复数据消耗内存
 	// instruction只需要引用各操作数的index，格式更加规整，处理逻辑更简单，index固定2个byte（有65535个足够用了）
-	constants   []object.Object
+	constants []object.Object
+
 	symbolTable *SymbolTable
+}
+
+func NewWithState(s *SymbolTable, constants []object.Object) *Compiler {
+	compiler := New()
+	compiler.symbolTable = s
+	compiler.constants = constants
+	return compiler
 }
 
 func New() *Compiler {
@@ -134,6 +142,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.IntegerLiteral:
 		intObj := &object.Integer{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(intObj))
+	case *ast.StringLiteral:
+		strObj := &object.String{Value: node.Value}
+		c.emit(code.OpConstant, c.addConstant(strObj))
 	case *ast.Boolean:
 		if node.Value {
 			c.emit(code.OpTrue)
@@ -250,7 +261,7 @@ func (c *Compiler) setLastInstruction(op code.Opcode, pos int) {
 }
 
 // addConstant add object to compiler.constants and return its index
-func (c *Compiler) addConstant(obj *object.Integer) int {
+func (c *Compiler) addConstant(obj object.Object) int {
 	c.constants = append(c.constants, obj)
 	return len(c.constants) - 1
 }
