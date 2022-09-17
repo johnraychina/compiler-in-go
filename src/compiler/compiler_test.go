@@ -19,16 +19,21 @@ type compilerTestCase struct {
 func TestFunctionCalls(t *testing.T) {
 	tests := []compilerTestCase{
 		{
-			input: `fn(){ 24 }();`,
+			input: `let fivePlusTen = fn(){5 + 10}; fivePlusTen();`,
 			expectedConstants: []interface{}{
-				24,
+				5,
+				10,
 				[]code.Instructions{
-					code.Make(code.OpConstant, 0), // "24"
+					code.Make(code.OpConstant, 0), // "5"
+					code.Make(code.OpConstant, 1), // "10"
+					code.Make(code.OpAdd),         // add
 					code.Make(code.OpReturnValue),
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
 				code.Make(code.OpCall),
 				code.Make(code.OpPop),
 			},

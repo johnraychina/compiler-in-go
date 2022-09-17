@@ -93,7 +93,6 @@ func (vm *VM) Run() error {
 		vm.currentFrame().ip++
 		ip = vm.currentFrame().ip
 		ins = vm.currentFrame().Instructions()
-
 		op = code.Opcode(ins[ip])
 
 		switch op {
@@ -196,6 +195,29 @@ func (vm *VM) Run() error {
 			left := vm.pop()
 
 			err := vm.executeIndexExpression(left, index)
+			if err != nil {
+				return err
+			}
+		case code.OpCall:
+			// 前面已经通过OpGetGlobal将函数放到vm 操作数stack上了，这里调用函数
+			fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
+			if !ok {
+				return fmt.Errorf("calling non-function")
+			}
+
+			// 把函数放到一个新的frame作为current frame（在main frame上面）
+			// 到下一个循环时，就会取对应新的frame的指令执行了
+			frame := NewFrame(fn)
+			vm.pushFrame(frame)
+		case code.OpReturnValue:
+			// 当前frame执行结果从操作数栈取出
+			returnVal := vm.pop()
+			// 弹出已经执行完成的function frame
+			vm.popFrame()
+			vm.pop()
+
+			// 将function执行结果放回操作数栈
+			err := vm.push(returnVal)
 			if err != nil {
 				return err
 			}

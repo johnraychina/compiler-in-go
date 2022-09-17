@@ -15,6 +15,20 @@ type vmTestCase struct {
 	expected interface{}
 }
 
+func TestCallingFunctionWithoutArguments(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+			let fivePlusTen = fn(){5 + 10};
+			fivePlusTen();
+			`,
+			expected: 15,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
 func TestIndexExpressions(t *testing.T) {
 	tests := []vmTestCase{
 		{"[1, 2, 3][1]", 2},
