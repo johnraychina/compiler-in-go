@@ -44,12 +44,13 @@ func (vm *VM) popFrame() *Frame {
 }
 
 type Frame struct {
-	fn *object.CompiledFunction
-	ip int
+	fn          *object.CompiledFunction
+	ip          int
+	basePointer int
 }
 
-func NewFrame(fn *object.CompiledFunction) *Frame {
-	return &Frame{fn: fn, ip: -1}
+func NewFrame(fn *object.CompiledFunction, basePointer int) *Frame {
+	return &Frame{fn: fn, ip: -1, basePointer: basePointer}
 }
 
 func (f *Frame) Instructions() code.Instructions {
@@ -65,7 +66,7 @@ func NewWithGlobalsStore(bytecode *compiler.Bytecode, s []object.Object) *VM {
 func New(bytecode *compiler.Bytecode) *VM {
 	// main函数也作为一个function，用frame封装起来。
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
-	mainFrame := NewFrame(mainFn)
+	mainFrame := NewFrame(mainFn, 0)
 
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
@@ -207,17 +208,45 @@ func (vm *VM) Run() error {
 
 			// 把函数放到一个新的frame作为current frame（在main frame上面）
 			// 到下一个循环时，就会取对应新的frame的指令执行了
-			frame := NewFrame(fn)
+			frame := NewFrame(fn, vm.sp)
 			vm.pushFrame(frame)
+			vm.sp = frame.basePointer + fn.NumLocals
+		case code.OpSetLocal:
+			localIndex := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().ip += 1
+
+			frame := vm.currentFrame()
+			vm.stack[frame.basePointer+int(localIndex)] = vm.pop()
+		case code.OpGetLocal:
+			localIndex := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().ip += 1
+
+			frame := vm.currentFrame()
+			err := vm.push(vm.stack[frame.basePointer+int(localIndex)])
+			if err != nil {
+				return err
+			}
 		case code.OpReturnValue:
 			// 当前frame执行结果从操作数栈取出
 			returnVal := vm.pop()
 			// 弹出已经执行完成的function frame
-			vm.popFrame()
-			vm.pop()
+			frame := vm.popFrame()
+			// vm.pop() 因为存在local 变量，所以只pop一下function literal object是不够的
+			vm.sp = frame.basePointer - 1
 
 			// 将function执行结果放回操作数栈
 			err := vm.push(returnVal)
+			if err != nil {
+				return err
+			}
+		case code.OpReturn:
+			// 弹出已经执行完成的function frame
+			frame := vm.popFrame()
+			// vm.pop() 因为存在local 变量，所以只pop一下function literal object是不够的
+			vm.sp = frame.basePointer - 1
+
+			// 将function执行结果放回操作数栈
+			err := vm.push(Null)
 			if err != nil {
 				return err
 			}
