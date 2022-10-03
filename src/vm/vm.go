@@ -200,17 +200,14 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpCall:
-			// 前面已经通过OpGetGlobal将函数放到vm 操作数stack上了，这里调用函数
-			fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
-			if !ok {
-				return fmt.Errorf("calling non-function")
-			}
 
-			// 把函数放到一个新的frame作为current frame（在main frame上面）
-			// 到下一个循环时，就会取对应新的frame的指令执行了
-			frame := NewFrame(fn, vm.sp)
-			vm.pushFrame(frame)
-			vm.sp = frame.basePointer + fn.NumLocals
+			numArgs := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().ip += 1
+
+			err := vm.callFunction(int(numArgs))
+			if err != nil {
+				return err
+			}
 		case code.OpSetLocal:
 			localIndex := code.ReadUint8(ins[ip+1:])
 			vm.currentFrame().ip += 1
@@ -252,6 +249,27 @@ func (vm *VM) Run() error {
 			}
 		}
 	}
+
+	return nil
+}
+
+func (vm *VM) callFunction(numArgs int) error {
+	// 前面已经通过OpGetGlobal将函数放到vm 操作数stack上了，这里调用函数
+	fn, ok := vm.stack[vm.sp-1-int(numArgs)].(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("calling non-function")
+	}
+
+	if numArgs != fn.NumParameters {
+		return fmt.Errorf("wrong number of arguments: want=%d, got=%d",
+			fn.NumParameters, numArgs)
+	}
+
+	// 把函数放到一个新的frame作为current frame（在main frame上面）
+	// 到下一个循环时，就会取对应新的frame的指令执行了
+	frame := NewFrame(fn, vm.sp-numArgs)
+	vm.pushFrame(frame)
+	vm.sp = frame.basePointer + fn.NumLocals
 
 	return nil
 }

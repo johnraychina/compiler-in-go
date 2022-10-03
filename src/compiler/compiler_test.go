@@ -34,8 +34,53 @@ func TestFunctionCalls(t *testing.T) {
 				code.Make(code.OpConstant, 2),
 				code.Make(code.OpSetGlobal, 0),
 				code.Make(code.OpGetGlobal, 0),
-				code.Make(code.OpCall),
+				code.Make(code.OpCall, 0),
 				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `let oneArg = fn(a){a;};  oneArg(24);`,
+			expectedConstants: []interface{}{
+				[]code.Instructions{
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpReturnValue),
+				},
+				24,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),  // function literal
+				code.Make(code.OpSetGlobal, 0), // add function object to symbol table
+				code.Make(code.OpGetGlobal, 0), // get function object to object stack
+				code.Make(code.OpConstant, 1),  // 24
+				code.Make(code.OpCall, 1),      // call with argument length
+				code.Make(code.OpPop),          // pop the result out of the stack
+			},
+		},
+		{
+			input: `let manyArg = fn(a,b,c){a; b; c;};  manyArg(24,25,26);`,
+			expectedConstants: []interface{}{
+				[]code.Instructions{
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpPop),
+					code.Make(code.OpGetLocal, 1),
+					code.Make(code.OpPop),
+					code.Make(code.OpGetLocal, 2),
+					code.Make(code.OpReturnValue),
+				},
+				24,
+				25,
+				26,
+			},
+
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),  // function literal
+				code.Make(code.OpSetGlobal, 0), // add function object to symbol table
+				code.Make(code.OpGetGlobal, 0), // get function object to object stack
+				code.Make(code.OpConstant, 1),  // 24
+				code.Make(code.OpConstant, 2),  // 25
+				code.Make(code.OpConstant, 3),  // 26
+				code.Make(code.OpCall, 3),      // call with argument length
+				code.Make(code.OpPop),          // pop the result out of the stack
 			},
 		},
 	}

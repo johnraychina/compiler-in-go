@@ -83,8 +83,8 @@ var definitions = map[Opcode]*Definition{
 	OpHash:  {"OpHash", []int{2}},
 	OpIndex: {"OpIndex", []int{}},
 
-	// 这个版本暂时不支持传参
-	OpCall: {"OpCall", []int{}},
+	// 参数的个数，可以用来在object stack上跳过参数，寻找function object。
+	OpCall: {"OpCall", []int{1}},
 
 	OpReturnValue: {"OpReturnValue", []int{}},
 	OpReturn:      {"OpReturn", []int{}},

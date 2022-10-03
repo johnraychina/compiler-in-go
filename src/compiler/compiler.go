@@ -289,6 +289,10 @@ func (c *Compiler) Compile(node ast.Node) error {
 		// 对于函数定义，开一个scope（stack frame）存储编译好的函数体指令
 		c.enterScope()
 
+		for _, p := range node.Parameters {
+			c.symbolTable.Define(p.Value)
+		}
+
 		err := c.Compile(node.Body)
 		if err != nil {
 			return err
@@ -306,7 +310,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 		// 把编译好的函数体指令，放在常量池中，以便后续调用。
 		instructions := c.leaveScope()
-		compiledFn := &object.CompiledFunction{Instructions: instructions, NumLocals: numLocals}
+		compiledFn := &object.CompiledFunction{
+			Instructions:  instructions,
+			NumLocals:     numLocals,
+			NumParameters: len(node.Parameters),
+		}
 		c.emit(code.OpConstant, c.addConstant(compiledFn))
 
 	case *ast.ReturnStatement:
@@ -322,7 +330,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 
-		c.emit(code.OpCall)
+		for _, a := range node.Arguments {
+			err := c.Compile(a)
+			if err != nil {
+				return err
+			}
+		}
+
+		c.emit(code.OpCall, len(node.Arguments))
 	}
 	return nil
 }
