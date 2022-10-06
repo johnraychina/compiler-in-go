@@ -44,6 +44,8 @@ const (
 	OpReturn
 	OpSetLocal
 	OpGetLocal
+
+	OpGetBuiltin
 )
 
 type Definition struct {
@@ -91,6 +93,9 @@ var definitions = map[Opcode]*Definition{
 
 	OpSetLocal: {"OpSetLocal", []int{1}},
 	OpGetLocal: {"OpGetLocal", []int{1}},
+
+	// 只有一个操作数，就是内置函数slice的下标
+	OpGetBuiltin: {"OpGetBuiltin", []int{1}},
 }
 
 func Lookup(op byte) (*Definition, error) {
