@@ -18,6 +18,10 @@ func Start(in io.Reader, out io.Writer) {
 
 	constants := []object.Object{}
 	symbolTable := compiler.NewSymbolTable()
+	for i, v := range object.Builtins {
+		symbolTable.DefineBuiltin(i, v.Name)
+	}
+
 	// FIXME 使用动态方式，而非一开始就分配大块内存
 	globals := make([]object.Object, vm.GlobalSize)
 
