@@ -44,17 +44,17 @@ func (vm *VM) popFrame() *Frame {
 }
 
 type Frame struct {
-	fn          *object.CompiledFunction
+	cl          *object.Closure
 	ip          int
 	basePointer int
 }
 
-func NewFrame(fn *object.CompiledFunction, basePointer int) *Frame {
-	return &Frame{fn: fn, ip: -1, basePointer: basePointer}
+func NewFrame(cl *object.Closure, basePointer int) *Frame {
+	return &Frame{cl: cl, ip: -1, basePointer: basePointer}
 }
 
 func (f *Frame) Instructions() code.Instructions {
-	return f.fn.Instructions
+	return f.cl.Fn.Instructions
 }
 
 func NewWithGlobalsStore(bytecode *compiler.Bytecode, s []object.Object) *VM {
@@ -66,7 +66,8 @@ func NewWithGlobalsStore(bytecode *compiler.Bytecode, s []object.Object) *VM {
 func New(bytecode *compiler.Bytecode) *VM {
 	// main函数也作为一个function，用frame封装起来。
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
-	mainFrame := NewFrame(mainFn, 0)
+	mainClosure := &object.Closure{Fn: mainFn}
+	mainFrame := NewFrame(mainClosure, 0)
 
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
@@ -256,6 +257,15 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpClosure:
+			constIndex := code.ReadUint16(ins[ip+1:])
+			//_ := code.ReadUint8(ins[ip+3:])
+			vm.currentFrame().ip += 3
+
+			err := vm.pushClosure(int(constIndex))
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -265,43 +275,37 @@ func (vm *VM) Run() error {
 func (vm *VM) executeCall(numArgs int) error {
 	callee := vm.stack[vm.sp-1-numArgs]
 	switch callee := callee.(type) {
-	case *object.CompiledFunction:
-		return vm.callFunction(callee, numArgs)
+	case *object.Closure:
+		return vm.callClosure(callee, numArgs)
 	case *object.Builtin:
 		return vm.callBuiltin(callee, numArgs)
 	default:
 		return fmt.Errorf("calling non-function and non-built-in")
 	}
 }
-func (vm *VM) callBuiltin(builtin *object.Builtin, numArgs int) error {
+func (vm *VM) callBuiltin(builtin *object.Builtin, numArgs int) (e error) {
 	args := vm.stack[vm.sp-numArgs : vm.sp]
 	result := builtin.Fn(args...)
 	vm.sp = vm.sp - numArgs - 1
 	if result != nil {
-		vm.push(result)
+		e = vm.push(result)
 	} else {
-		vm.push(Null)
+		e = vm.push(Null)
 	}
-	return nil
+	return e
 }
 
-func (vm *VM) callFunction(fn *object.CompiledFunction, numArgs int) error {
-	// 前面已经通过OpGetGlobal将函数放到vm 操作数stack上了，这里调用函数
-	// fn, ok := vm.stack[vm.sp-1-int(numArgs)].(*object.CompiledFunction)
-	// if !ok {
-	// 	return fmt.Errorf("calling non-function")
-	// }
-
-	if numArgs != fn.NumParameters {
+func (vm *VM) callClosure(cl *object.Closure, numArgs int) error {
+	if numArgs != cl.Fn.NumParameters {
 		return fmt.Errorf("wrong number of arguments: want=%d, got=%d",
-			fn.NumParameters, numArgs)
+			cl.Fn.NumParameters, numArgs)
 	}
 
 	// 把函数放到一个新的frame作为current frame（在main frame上面）
 	// 到下一个循环时，就会取对应新的frame的指令执行了
-	frame := NewFrame(fn, vm.sp-numArgs)
+	frame := NewFrame(cl, vm.sp-numArgs)
 	vm.pushFrame(frame)
-	vm.sp = frame.basePointer + fn.NumLocals
+	vm.sp = frame.basePointer + cl.Fn.NumLocals
 
 	return nil
 }
@@ -516,4 +520,15 @@ func (vm *VM) buildHash(spStart int, spEnd int) (*object.Hash, error) {
 	}
 
 	return &object.Hash{Pairs: pairs}, nil
+}
+
+func (vm *VM) pushClosure(constIndex int) error {
+	constant := vm.constants[constIndex]
+	function, ok := constant.(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("not a function: %+v", constant)
+	}
+
+	closure := &object.Closure{Fn: function}
+	return vm.push(closure)
 }
