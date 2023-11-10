@@ -100,7 +100,7 @@ var definitions = map[Opcode]*Definition{
 	OpGetBuiltin: {"OpGetBuiltin", []int{1}},
 
 	// 2 byte-wide: the index of function in constant pool
-	// 1 byte-wide: free variable index
+	// 1 byte-wide: free variable count
 	OpClosure: {"OpClosure", []int{2, 1}},
 }
 
