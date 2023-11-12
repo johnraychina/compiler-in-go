@@ -15,6 +15,18 @@ type vmTestCase struct {
 	expected interface{}
 }
 
+// 整体思路:
+// 分词阶段：string -> token -> ast node
+
+// 编译阶段：ast node -> instruction(OpCode Operands)
+// compiler: 解析FunctionLiteral时，将function包装为 OpClosure 指令
+// symbol: 解析变量Identifier时，非local非global非built-in的变量，包装为 OpGetFree 指令
+
+// 运行阶段：instruction -> vm stack
+// vm:
+//   处理 OpClosure 指令：OpClosure -> push closure to vm stack,  OpCall -> call closure
+//   处理 OpGetFree 指令：get Free variable of the current frame closure, push vm stack
+
 func TestClosures(t *testing.T) {
 	tests := []vmTestCase{
 		{
