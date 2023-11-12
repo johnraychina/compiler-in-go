@@ -397,9 +397,9 @@ func (c *Compiler) removeLastPop() {
 	last := c.scopes[c.scopeIndex].lastInstruction
 	prev := c.scopes[c.scopeIndex].previousInstruction
 	old := c.currentInstructions()
-	new := old[:last.Position]
+	newIns := old[:last.Position]
 
-	c.scopes[c.scopeIndex].instructions = new
+	c.scopes[c.scopeIndex].instructions = newIns
 	c.scopes[c.scopeIndex].lastInstruction = prev
 }
 
